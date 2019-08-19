@@ -6,22 +6,20 @@ const DATA_CACHE_NAME = 'data-cache-v1';
 const DATA_DB_NAME = 'shedule-db-v1';
 const STATIONS_TAB_NAME = 'stations-tab';
 const DB_VERSION = 1;
-const url_base = 'https://api-ratp.pierre-grimaud.fr/v3/schedules/'
+const url_base = 'https://api-ratp.pierre-grimaud.fr/v3/schedules/';
 
 // CODELAB: Add list of files to cache here.
-const FILES_TO_CACHE = [
-   '/',
-   '/images/icons/',
-   '/manifest.json',
-  '/offline.html',
-  '/index.html',
-  '/scripts/app.js',
-  '/scripts/install.js',
-  '/styles/inline.css',
-  '/images/offline.svg',
-  '/images/install.svg',
-  '/images/ic_add_white_24px.svg',
-  '/images/ic_refresh_white_24px.svg',
+const FILES_TO_CACHE = ['./manifest.json',
+  './offline.html',
+  /*'./404.html',*/
+  './index.html',
+  'scripts/app.js',
+  'scripts/install.js',
+  'styles/inline.css',
+  'images/offline.svg',
+  'images/install.svg',
+  'images/ic_add_white_24px.svg',
+  'images/ic_refresh_white_24px.svg',
   'images/favicon.ico',
 ];
 
