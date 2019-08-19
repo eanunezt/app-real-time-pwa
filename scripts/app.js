@@ -11,6 +11,44 @@
         addDialog: document.querySelector('.dialog-container')
     };
 
+    const DATA_DB_NAME = 'shedule-db-v1';
+    const STATIONS_TAB_NAME = 'stations-tab';
+    const DB_VERSION = 1;
+    let dbShedule=null;
+
+    function createDB(){ 
+ 
+        dbShedule = indexedDB.open(DATA_DB_NAME, DB_VERSION);
+        dbShedule.onsuccess= function(event) {
+          console.log('making a new object db');
+        };
+        dbShedule.onupgradeneeded = function(event) {
+
+            var db = event.target.result;
+            db.onerror = function(event) {
+              console.error('error a new object store='+STATIONS_TAB_NAME);
+              return;
+            };
+        
+          // Create an objectStore for this database
+            if (!db.objectStoreNames.contains(STATIONS_TAB_NAME)) {   
+             var store =db.createObjectStore(STATIONS_TAB_NAME, {keyPath: 'key'});
+              store.createIndex('key', 'key', { unique: false });
+              console.log('making a new object store='+STATIONS_TAB_NAME);
+            }
+            };
+      
+      dbShedule.onerror = function(event) {
+        // raised with no InvalidStateError
+        if (event.currentTarget.error && event.currentTarget.error.name === 'InvalidStateError') {
+            event.preventDefault();
+        }
+        console.log('Error getting data from getScheduleFromIDB.IndexedDB', event.currentTarget);
+        return ;
+      };
+      
+      }
+ 
 
     /*****************************************************************************
      *
@@ -64,7 +102,7 @@
         }
     };
 
-    // Updates a timestation card with the latest weather forecast. If the card
+    // Updates a timestation card with the latest Schedule. If the card
     // doesn't already exist, it's cloned from the template.
 
     app.updateTimetableCard = function (data) {
@@ -111,6 +149,10 @@
 
 
     app.getSchedule = function (key, label) {
+
+         //Get the Schedule data from the cache.
+         app.getScheduleFromIDB(key);
+
         var url = 'https://api-ratp.pierre-grimaud.fr/v3/schedules/' + key;
 
         var request = new XMLHttpRequest();
@@ -124,9 +166,10 @@
                     result.created = response._metadata.date;
                     result.schedules = response.result.schedules;
                     app.updateTimetableCard(result);
+                    app.addScheduleToIDB(result);
                 }
             } else {
-                // Return the initial weather forecast since no data is available.
+                // Return the initial Schedule since no data is available.
                 app.updateTimetableCard(initialStationTimetable);
             }
         };
@@ -134,10 +177,81 @@
         request.send();
     };
 
+    /**
+     * Get's the cached Schedule data from the caches object.
+     *
+     * @param {string} key, path station.
+     * @param {string} label, desc station
+     * @return {Object} The Schedule, if the request fails, return null.
+     */
+    app.getScheduleFromIDB = function(key, label) {
+    // CODELAB: Add code to get Schedule from the caches object.
+    console.dir("getScheduleFromIDB init recovery");
+    if (!('indexedDB' in window)) {
+        console.log('This browser doesn\'t support IndexedDB');
+        return;
+      }
+      var resDB = indexedDB.open(DATA_DB_NAME,DB_VERSION);
+     
+      resDB.onsuccess = function(event) {
+        var db = resDB.result;
+        if(db.objectStoreNames.contains(STATIONS_TAB_NAME)){
+        var tx =db.transaction(STATIONS_TAB_NAME, 'readonly');
+        var stations = tx.objectStore(STATIONS_TAB_NAME);
+        var val=stations.get(key);
+        val.onsuccess= function(event) {
+            console.dir("getScheduleFromIDB val="+val);
+            if(val.result){
+                app.updateTimetableCard(val.result); 
+            }
+        }
+        val.onerror= function(event) {
+            console.dir("getScheduleFromIDB.onerror val="+event);
+        }
+    }
+    };
+
+    app.addScheduleToIDB = function(result) {
+        // CODELAB: Add code to get Schedule from the caches object.
+        console.dir("getScheduleFromIDB init recovery");
+        if (!('indexedDB' in window)) {
+            console.log('This browser doesn\'t support IndexedDB');
+            return;
+          }
+          var resDB = indexedDB.open(DATA_DB_NAME,DB_VERSION);
+         
+          resDB.onsuccess = function(event) {
+            var db = resDB.result;             
+            var tx = db.transaction(STATIONS_TAB_NAME, 'readwrite');
+            console.log('result-->'+result); 
+            var stations = tx.objectStore(STATIONS_TAB_NAME);         
+            
+            stations.add(result);
+            stations.onsuccess = function(){
+              console.log('added item to the store os!');
+            } 
+            tx.complete;
+        }
+        };
+    resDB.onerror = function(event) {
+        // raised with no InvalidStateError
+        if (event.currentTarget.error && event.currentTarget.error.name === 'InvalidStateError') {
+            event.preventDefault();
+        }
+        console.error('Error setting data to getScheduleFromIDB.IndexedDB', event.currentTarget.error);
+        return ;
+    };
+
+       
+  }
+
+
     // Iterate all of the cards and attempt to get the latest timetable data
     app.updateSchedules = function () {
         var keys = Object.keys(app.visibleCards);
         keys.forEach(function (key) {
+   
+            //Get the Schedule data from the cache or network.
             app.getSchedule(key);
         });
     };
@@ -179,7 +293,7 @@
      *   Instead, check out IDB (https://www.npmjs.com/package/idb) or
      *   SimpleDB (https://gist.github.com/inexorabletash/c8069c042b734519680c)
      ************************************************************************/
-
+    createDB();
     app.getSchedule('metros/1/bastille/A', 'Bastille, Direction La Défense');
     app.selectedTimetables = [
         {key: initialStationTimetable.key, label: initialStationTimetable.label}
