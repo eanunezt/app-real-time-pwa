@@ -135,6 +135,7 @@
         }
 
         if (app.isLoading) {
+            window.cardLoadTime = performance.now();
             app.spinner.setAttribute('hidden', true);
             app.container.removeAttribute('hidden');
             app.isLoading = false;
@@ -152,13 +153,15 @@
 
          //Get the Schedule data from the cache.
          app.getScheduleFromIDB(key);
-
+       
         var url = 'https://api-ratp.pierre-grimaud.fr/v3/schedules/' + key;
 
         var request = new XMLHttpRequest();
         request.onreadystatechange = function () {
             if (request.readyState === XMLHttpRequest.DONE) {
                 if (request.status === 200) {
+                    //Primer llamado correcto al API
+                    window.ApiLoadTime  = performance.now();
                     var response = JSON.parse(request.response);
                     var result = {};
                     result.key = key;
